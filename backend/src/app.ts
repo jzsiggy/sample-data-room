@@ -9,13 +9,13 @@ import { StorageService } from "./storage/storage-service";
 
 export interface AppDeps {
   /**
-   * Injected so tests can supply the in-memory fake. Unused by the walking
-   * skeleton's routes; feature slices wire it into upload/download endpoints.
+   * Injected so tests can supply the in-memory fake. Wired into the rooms
+   * router's file upload/download/delete endpoints.
    */
   storage: StorageService;
 }
 
-export function createApp(_deps: AppDeps): Express {
+export function createApp(deps: AppDeps): Express {
   const app = express();
 
   // Credentialed CORS is the foundation for the httpOnly cookie session
@@ -32,7 +32,7 @@ export function createApp(_deps: AppDeps): Express {
 
   app.use(healthRouter());
   app.use(authRouter());
-  app.use(roomsRouter());
+  app.use(roomsRouter(deps.storage));
 
   app.use(errorHandler);
 

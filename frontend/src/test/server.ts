@@ -14,4 +14,9 @@ export const server = setupServer(
   // Empty rooms list by default so the signed-in dashboard renders without each
   // unrelated test having to stub it.
   http.get("http://localhost:3000/rooms", () => HttpResponse.json([])),
+  // Empty file list by default so the room-detail page renders without every
+  // detail test having to stub the files endpoint.
+  http.get("http://localhost:3000/rooms/:id/files", () =>
+    HttpResponse.json([]),
+  ),
 );
