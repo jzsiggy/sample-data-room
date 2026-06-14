@@ -43,6 +43,21 @@ describe("rooms dashboard", () => {
     expect(await screen.findByText("Beta Diligence")).toBeInTheDocument();
   });
 
+  it("links each room to its detail page", async () => {
+    signedIn();
+    server.use(
+      http.get("http://localhost:3000/rooms", () =>
+        HttpResponse.json([
+          { id: "r1", name: "Acme Seed Round", createdAt: new Date().toISOString() },
+        ]),
+      ),
+    );
+    renderApp("/rooms");
+
+    const link = await screen.findByRole("link", { name: "Acme Seed Round" });
+    expect(link).toHaveAttribute("href", "/rooms/r1");
+  });
+
   it("creates a room and shows it in the list", async () => {
     signedIn();
     server.use(
