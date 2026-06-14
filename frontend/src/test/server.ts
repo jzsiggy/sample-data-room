@@ -11,4 +11,7 @@ export const server = setupServer(
   http.get("http://localhost:3000/auth/me", () =>
     HttpResponse.json({ error: "Not authenticated." }, { status: 401 }),
   ),
+  // Empty rooms list by default so the signed-in dashboard renders without each
+  // unrelated test having to stub it.
+  http.get("http://localhost:3000/rooms", () => HttpResponse.json([])),
 );

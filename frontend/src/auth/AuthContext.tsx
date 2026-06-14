@@ -1,5 +1,5 @@
 import { ReactNode, createContext, useEffect, useState } from "react";
-import { apiFetch } from "../api";
+import { apiFetch, apiJson } from "../api";
 
 export interface Owner {
   id: string;
@@ -17,20 +17,15 @@ export interface AuthContextValue {
 
 export const AuthContext = createContext<AuthContextValue | null>(null);
 
-async function submitCredentials(
+function submitCredentials(
   path: string,
   email: string,
   password: string,
 ): Promise<Owner> {
-  const res = await apiFetch(path, {
+  return apiJson<Owner>(path, {
     method: "POST",
     body: JSON.stringify({ email, password }),
   });
-  const body = await res.json().catch(() => ({}));
-  if (!res.ok) {
-    throw new Error(body.error ?? "Something went wrong. Please try again.");
-  }
-  return body as Owner;
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {

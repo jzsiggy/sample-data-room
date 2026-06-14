@@ -15,3 +15,18 @@ export function apiFetch(path: string, init?: RequestInit): Promise<Response> {
     },
   });
 }
+
+/**
+ * apiFetch + JSON parse that throws on a non-2xx response, surfacing the API's
+ * `error` message when present.
+ */
+export async function apiJson<T>(path: string, init?: RequestInit): Promise<T> {
+  const res = await apiFetch(path, init);
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(
+      (body as { error?: string }).error ?? "Something went wrong.",
+    );
+  }
+  return body as T;
+}

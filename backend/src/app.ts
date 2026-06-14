@@ -4,6 +4,7 @@ import express, { Express } from "express";
 import { errorHandler } from "./middleware/error-handler";
 import { authRouter } from "./routes/auth";
 import { healthRouter } from "./routes/health";
+import { roomsRouter } from "./routes/rooms";
 import { StorageService } from "./storage/storage-service";
 
 export interface AppDeps {
@@ -31,6 +32,7 @@ export function createApp(_deps: AppDeps): Express {
 
   app.use(healthRouter());
   app.use(authRouter());
+  app.use(roomsRouter());
 
   app.use(errorHandler);
 
