@@ -1,4 +1,4 @@
-import { apiJson } from "../api";
+import { apiFetch, apiJson } from "../api";
 
 export interface Room {
   id: string;
@@ -15,4 +15,22 @@ export function createRoom(name: string): Promise<Room> {
     method: "POST",
     body: JSON.stringify({ name }),
   });
+}
+
+export function getRoom(id: string): Promise<Room> {
+  return apiJson<Room>(`/rooms/${id}`);
+}
+
+export function renameRoom(id: string, name: string): Promise<Room> {
+  return apiJson<Room>(`/rooms/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify({ name }),
+  });
+}
+
+export async function deleteRoom(id: string): Promise<void> {
+  const res = await apiFetch(`/rooms/${id}`, { method: "DELETE" });
+  if (!res.ok) {
+    throw new Error("Could not delete the room.");
+  }
 }

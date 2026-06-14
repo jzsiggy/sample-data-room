@@ -1,4 +1,5 @@
 import { FormEvent, useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { useAuth } from "../auth/useAuth";
 import { Room, createRoom, listRooms } from "../rooms/rooms-api";
 
@@ -50,7 +51,9 @@ export function RoomsPage() {
 
       <ul>
         {rooms.map((room) => (
-          <li key={room.id}>{room.name}</li>
+          <li key={room.id}>
+            <Link to={`/rooms/${room.id}`}>{room.name}</Link>
+          </li>
         ))}
       </ul>
     </main>

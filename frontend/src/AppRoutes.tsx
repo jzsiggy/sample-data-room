@@ -2,6 +2,7 @@ import { Navigate, Route, Routes } from "react-router-dom";
 import { useAuth } from "./auth/useAuth";
 import { LoginPage } from "./pages/LoginPage";
 import { RegisterPage } from "./pages/RegisterPage";
+import { RoomDetailPage } from "./pages/RoomDetailPage";
 import { RoomsPage } from "./pages/RoomsPage";
 
 export function AppRoutes() {
@@ -24,6 +25,7 @@ export function AppRoutes() {
   return (
     <Routes>
       <Route path="/rooms" element={<RoomsPage />} />
+      <Route path="/rooms/:id" element={<RoomDetailPage />} />
       <Route path="*" element={<Navigate to="/rooms" replace />} />
     </Routes>
   );
