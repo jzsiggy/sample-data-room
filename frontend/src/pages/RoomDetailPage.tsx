@@ -1,6 +1,14 @@
 import { FormEvent, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { Room, deleteRoom, getRoom, renameRoom } from "../rooms/rooms-api";
+import {
+  Room,
+  deleteRoom,
+  getRoom,
+  regenerateShareToken,
+  renameRoom,
+  setLinkEnabled,
+  shareLink,
+} from "../rooms/rooms-api";
 
 export function RoomDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -45,6 +53,20 @@ export function RoomDetailPage() {
     navigate("/rooms");
   }
 
+  async function onCopy() {
+    await navigator.clipboard.writeText(shareLink(room!.shareToken));
+  }
+
+  async function onToggleLink() {
+    const updated = await setLinkEnabled(room!.id, !room!.linkEnabled);
+    setRoom(updated);
+  }
+
+  async function onRegenerate() {
+    const updated = await regenerateShareToken(room!.id);
+    setRoom(updated);
+  }
+
   return (
     <main>
       <h1>{room.name}</h1>
@@ -68,6 +90,24 @@ export function RoomDetailPage() {
       <button type="button" onClick={onDelete}>
         Delete
       </button>
+
+      <section>
+        <label htmlFor="share-link">Share link</label>
+        <input
+          id="share-link"
+          readOnly
+          value={shareLink(room.shareToken)}
+        />
+        <button type="button" onClick={onCopy}>
+          Copy
+        </button>
+        <button type="button" onClick={onToggleLink}>
+          {room.linkEnabled ? "Disable" : "Enable"}
+        </button>
+        <button type="button" onClick={onRegenerate}>
+          Regenerate
+        </button>
+      </section>
     </main>
   );
 }

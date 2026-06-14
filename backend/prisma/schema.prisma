@@ -20,11 +20,15 @@ model Owner {
 
 // A named container that holds files and is shared as a single unit.
 model Room {
-  id        String   @id @default(cuid())
-  name      String
-  ownerId   String
-  owner     Owner    @relation(fields: [ownerId], references: [id], onDelete: Cascade)
-  createdAt DateTime @default(now())
+  id          String   @id @default(cuid())
+  name        String
+  ownerId     String
+  owner       Owner    @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  // Unguessable secret in the share link, distinct from the internal id.
+  shareToken  String   @unique
+  // A new room's link is disabled until the owner deliberately enables it.
+  linkEnabled Boolean  @default(false)
+  createdAt   DateTime @default(now())
 
   @@index([ownerId])
 }
