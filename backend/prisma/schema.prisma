@@ -1,0 +1,30 @@
+// Domain models are added per feature slice.
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// The authenticated person who signs in, creates rooms, and shares files.
+model Owner {
+  id           String    @id @default(cuid())
+  email        String    @unique
+  passwordHash String
+  createdAt    DateTime  @default(now())
+  sessions     Session[]
+}
+
+// A server-side login session. Its id is a cryptographically random token that
+// is carried (signed) in the httpOnly `sid` cookie — see ADR-0001.
+model Session {
+  id        String   @id
+  ownerId   String
+  owner     Owner    @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([ownerId])
+}
