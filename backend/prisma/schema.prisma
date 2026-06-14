@@ -29,8 +29,25 @@ model Room {
   // A new room's link is disabled until the owner deliberately enables it.
   linkEnabled Boolean  @default(false)
   createdAt   DateTime @default(now())
+  files       File[]
 
   @@index([ownerId])
+}
+
+// An uploaded artifact inside a room — its bytes (in object storage, keyed by
+// `storageKey`) plus a name, MIME type, and size. Deleting the room cascades
+// these rows away; the storage objects are removed by the route handler.
+model File {
+  id          String   @id @default(cuid())
+  roomId      String
+  room        Room     @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  name        String
+  contentType String
+  size        Int
+  storageKey  String
+  createdAt   DateTime @default(now())
+
+  @@index([roomId])
 }
 
 // A server-side login session. Its id is a cryptographically random token that
