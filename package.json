@@ -4,7 +4,7 @@
   "private": true,
   "description": "Root scripts for the data-room app (frontend + backend live in their own folders).",
   "scripts": {
-    "setup": "pnpm -C backend install && pnpm -C frontend install && (test -f backend/.env || cp backend/.env.example backend/.env)",
+    "setup": "pnpm -C backend install && pnpm -C frontend install && (test -f backend/.env || cp backend/.env.example backend/.env) && pnpm -C backend exec prisma generate",
     "dev": "trap 'kill 0' EXIT; pnpm -C backend dev & pnpm -C frontend dev & wait",
     "dev:backend": "pnpm -C backend dev",
     "dev:frontend": "pnpm -C frontend dev"
