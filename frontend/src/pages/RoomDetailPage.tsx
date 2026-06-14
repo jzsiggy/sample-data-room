@@ -12,7 +12,10 @@ import {
   listFiles,
   presignUpload,
   putToStorage,
+  regenerateShareToken,
   renameRoom,
+  setLinkEnabled,
+  shareLink,
 } from "../rooms/rooms-api";
 
 export function RoomDetailPage() {
@@ -66,6 +69,20 @@ export function RoomDetailPage() {
   async function onDelete() {
     await deleteRoom(room!.id);
     navigate("/rooms");
+  }
+
+  async function onCopy() {
+    await navigator.clipboard.writeText(shareLink(room!.shareToken));
+  }
+
+  async function onToggleLink() {
+    const updated = await setLinkEnabled(room!.id, !room!.linkEnabled);
+    setRoom(updated);
+  }
+
+  async function onRegenerate() {
+    const updated = await regenerateShareToken(room!.id);
+    setRoom(updated);
   }
 
   async function onSelectFile(event: ChangeEvent<HTMLInputElement>) {
@@ -125,6 +142,24 @@ export function RoomDetailPage() {
       <button type="button" onClick={onDelete}>
         Delete
       </button>
+
+      <section>
+        <label htmlFor="share-link">Share link</label>
+        <input
+          id="share-link"
+          readOnly
+          value={shareLink(room.shareToken)}
+        />
+        <button type="button" onClick={onCopy}>
+          Copy
+        </button>
+        <button type="button" onClick={onToggleLink}>
+          {room.linkEnabled ? "Disable" : "Enable"}
+        </button>
+        <button type="button" onClick={onRegenerate}>
+          Regenerate
+        </button>
+      </section>
 
       <section>
         <h2>Files</h2>

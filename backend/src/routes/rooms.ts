@@ -6,6 +6,7 @@ import { requireOwner } from "../middleware/require-owner";
 import { prisma } from "../prisma";
 import { publicFile } from "../rooms/public-file";
 import { publicRoom } from "../rooms/public-room";
+import { newShareToken } from "../rooms/share-token";
 import { StorageService } from "../storage/storage-service";
 
 /** Maximum size, in bytes, of a single uploaded file (50 MB). */
@@ -40,7 +41,7 @@ export function roomsRouter(storage: StorageService): Router {
     asyncHandler(async (req, res) => {
       const { name } = req.body ?? {};
       const room = await prisma.room.create({
-        data: { name, ownerId: req.ownerId! },
+        data: { name, ownerId: req.ownerId!, shareToken: newShareToken() },
       });
       res.status(201).json(publicRoom(room));
     }),
@@ -72,19 +73,33 @@ export function roomsRouter(storage: StorageService): Router {
     "/rooms/:id",
     asyncHandler(requireOwner),
     asyncHandler(async (req, res) => {
-      const { name } = req.body ?? {};
-      const { count } = await prisma.room.updateMany({
-        where: { id: req.params.id, ownerId: req.ownerId },
-        data: { name },
+      const room = await findOwnedRoom(req, res);
+      if (!room) return;
+
+      const { name, linkEnabled } = req.body ?? {};
+      const data: { name?: string; linkEnabled?: boolean } = {};
+      if (name !== undefined) data.name = name;
+      if (linkEnabled !== undefined) data.linkEnabled = linkEnabled;
+      const updated = await prisma.room.update({
+        where: { id: room.id },
+        data,
       });
-      if (count === 0) {
-        res.status(404).json({ error: "Room not found." });
-        return;
-      }
-      const room = await prisma.room.findUniqueOrThrow({
-        where: { id: req.params.id },
+      res.json(publicRoom(updated));
+    }),
+  );
+
+  router.post(
+    "/rooms/:id/share-token",
+    asyncHandler(requireOwner),
+    asyncHandler(async (req, res) => {
+      const room = await findOwnedRoom(req, res);
+      if (!room) return;
+
+      const updated = await prisma.room.update({
+        where: { id: room.id },
+        data: { shareToken: newShareToken() },
       });
-      res.json(publicRoom(room));
+      res.json(publicRoom(updated));
     }),
   );
 

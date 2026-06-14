@@ -26,10 +26,20 @@ function signedIn() {
   );
 }
 
-function roomDetail(room: { id: string; name: string }) {
+function roomDetail(room: {
+  id: string;
+  name: string;
+  shareToken?: string;
+  linkEnabled?: boolean;
+}) {
   server.use(
     http.get(`http://localhost:3000/rooms/${room.id}`, () =>
-      HttpResponse.json({ ...room, createdAt: new Date().toISOString() }),
+      HttpResponse.json({
+        shareToken: "tok-default",
+        linkEnabled: false,
+        ...room,
+        createdAt: new Date().toISOString(),
+      }),
     ),
   );
 }
@@ -73,6 +83,82 @@ describe("room detail", () => {
     await user.click(screen.getByRole("button", { name: /save/i }));
 
     expect(await screen.findByText("New Name")).toBeInTheDocument();
+  });
+
+  it("shows the share link and copies it to the clipboard", async () => {
+    signedIn();
+    roomDetail({ id: "r1", name: "Acme Seed Round", shareToken: "tok-abc" });
+    const user = userEvent.setup();
+    renderApp("/rooms/r1");
+    await screen.findByText("Acme Seed Round");
+
+    const link = screen.getByLabelText(/share link/i) as HTMLInputElement;
+    expect(link.value).toContain("tok-abc");
+
+    await user.click(screen.getByRole("button", { name: /copy/i }));
+    expect(await navigator.clipboard.readText()).toBe(link.value);
+  });
+
+  it("enables a disabled link and disables it again", async () => {
+    signedIn();
+    roomDetail({
+      id: "r1",
+      name: "Acme Seed Round",
+      shareToken: "tok-abc",
+      linkEnabled: false,
+    });
+    server.use(
+      http.patch("http://localhost:3000/rooms/r1", async ({ request }) => {
+        const body = (await request.json()) as { linkEnabled: boolean };
+        return HttpResponse.json({
+          id: "r1",
+          name: "Acme Seed Round",
+          shareToken: "tok-abc",
+          linkEnabled: body.linkEnabled,
+          createdAt: new Date().toISOString(),
+        });
+      }),
+    );
+    const user = userEvent.setup();
+    renderApp("/rooms/r1");
+    await screen.findByText("Acme Seed Round");
+
+    await user.click(screen.getByRole("button", { name: /enable/i }));
+    expect(
+      await screen.findByRole("button", { name: /disable/i }),
+    ).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: /disable/i }));
+    expect(
+      await screen.findByRole("button", { name: /enable/i }),
+    ).toBeInTheDocument();
+  });
+
+  it("regenerates the share token and shows the new link", async () => {
+    signedIn();
+    roomDetail({ id: "r1", name: "Acme Seed Round", shareToken: "old-token" });
+    server.use(
+      http.post("http://localhost:3000/rooms/r1/share-token", () =>
+        HttpResponse.json({
+          id: "r1",
+          name: "Acme Seed Round",
+          shareToken: "new-token",
+          linkEnabled: false,
+          createdAt: new Date().toISOString(),
+        }),
+      ),
+    );
+    const user = userEvent.setup();
+    renderApp("/rooms/r1");
+    await screen.findByText("Acme Seed Round");
+    expect(
+      (screen.getByLabelText(/share link/i) as HTMLInputElement).value,
+    ).toContain("old-token");
+
+    await user.click(screen.getByRole("button", { name: /regenerate/i }));
+
+    expect(await screen.findByDisplayValue(/new-token/)).toBeInTheDocument();
+    expect(screen.queryByDisplayValue(/old-token/)).not.toBeInTheDocument();
   });
 
   it("deletes the room and returns to the dashboard without it", async () => {

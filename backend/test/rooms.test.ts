@@ -29,6 +29,20 @@ describe("POST /rooms", () => {
     expect(response.body).toMatchObject({ name: "Acme Seed Round" });
     expect(response.body.id).toBeTruthy();
   });
+
+  it("issues an unguessable share token (distinct from the id) with the link disabled by default", async () => {
+    const app = buildApp();
+    const agent = await signedInAgent(app, "owner@example.com");
+
+    const response = await agent
+      .post("/rooms")
+      .send({ name: "Acme Seed Round" });
+
+    expect(response.status).toBe(201);
+    expect(response.body.shareToken).toBeTruthy();
+    expect(response.body.shareToken).not.toBe(response.body.id);
+    expect(response.body.linkEnabled).toBe(false);
+  });
 });
 
 describe("GET /rooms", () => {
@@ -75,6 +89,9 @@ describe("rooms require authentication", () => {
 
     const remove = await request(app).delete("/rooms/some-id");
     expect(remove.status).toBe(401);
+
+    const regenerate = await request(app).post("/rooms/some-id/share-token");
+    expect(regenerate.status).toBe(401);
   });
 });
 
@@ -151,6 +168,81 @@ describe("PATCH /rooms/:id", () => {
 
     const stillThere = await grace.get(`/rooms/${graceRoom.body.id}`);
     expect(stillThere.body.name).toBe("Grace Room");
+  });
+});
+
+describe("PATCH /rooms/:id share link", () => {
+  it("enables a disabled link and disables it again, restoring the same token", async () => {
+    const app = buildApp();
+    const ada = await signedInAgent(app, "ada@example.com");
+    const created = await ada
+      .post("/rooms")
+      .send({ name: "Acme Seed Round" })
+      .expect(201);
+    const { id, shareToken } = created.body;
+
+    const enabled = await ada.patch(`/rooms/${id}`).send({ linkEnabled: true });
+    expect(enabled.status).toBe(200);
+    expect(enabled.body.linkEnabled).toBe(true);
+    expect(enabled.body.shareToken).toBe(shareToken);
+
+    const disabled = await ada
+      .patch(`/rooms/${id}`)
+      .send({ linkEnabled: false });
+    expect(disabled.status).toBe(200);
+    expect(disabled.body.linkEnabled).toBe(false);
+    expect(disabled.body.shareToken).toBe(shareToken);
+  });
+
+  it("leaves the name untouched when only toggling the link", async () => {
+    const app = buildApp();
+    const ada = await signedInAgent(app, "ada@example.com");
+    const created = await ada
+      .post("/rooms")
+      .send({ name: "Acme Seed Round" })
+      .expect(201);
+
+    const toggled = await ada
+      .patch(`/rooms/${created.body.id}`)
+      .send({ linkEnabled: true });
+
+    expect(toggled.body.name).toBe("Acme Seed Round");
+  });
+});
+
+describe("POST /rooms/:id/share-token", () => {
+  it("regenerates the share token, replacing it with a new unique value", async () => {
+    const app = buildApp();
+    const ada = await signedInAgent(app, "ada@example.com");
+    const created = await ada
+      .post("/rooms")
+      .send({ name: "Acme Seed Round" })
+      .expect(201);
+    const oldToken = created.body.shareToken;
+
+    const response = await ada.post(`/rooms/${created.body.id}/share-token`);
+
+    expect(response.status).toBe(200);
+    expect(response.body.shareToken).toBeTruthy();
+    expect(response.body.shareToken).not.toBe(oldToken);
+    expect(response.body.id).toBe(created.body.id);
+  });
+
+  it("returns 404 when regenerating the token of a room owned by someone else", async () => {
+    const app = buildApp();
+    const ada = await signedInAgent(app, "ada@example.com");
+    const grace = await signedInAgent(app, "grace@example.com");
+    const graceRoom = await grace
+      .post("/rooms")
+      .send({ name: "Grace Room" })
+      .expect(201);
+
+    const response = await ada.post(`/rooms/${graceRoom.body.id}/share-token`);
+
+    expect(response.status).toBe(404);
+
+    const stillThere = await grace.get(`/rooms/${graceRoom.body.id}`);
+    expect(stillThere.body.shareToken).toBe(graceRoom.body.shareToken);
   });
 });
 
