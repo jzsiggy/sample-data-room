@@ -1,3 +1,6 @@
+// Load backend/.env before anything reads process.env (e.g. the Prisma client).
+// Only the runtime entrypoint does this; tests get their env from Vitest config.
+import "dotenv/config";
 import { createApp } from "./app";
 import { S3StorageService } from "./storage/s3-storage-service";
 
